@@ -1,0 +1,2 @@
+include stormshield/sns/bundle.ca
+include stormshield/sns/cmd.complete
