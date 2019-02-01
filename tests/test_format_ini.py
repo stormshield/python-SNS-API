@@ -6,18 +6,16 @@ import unittest
 
 from stormshield.sns.sslclient import SSLClient
 
-# APPLIANCE env var must be set to the ip/hostname of a running SNS appliance
-if 'APPLIANCE' not in os.environ:
-    APPLIANCE=""
-else:
-    APPLIANCE=os.environ['APPLIANCE']
+APPLIANCE=os.getenv('APPLIANCE', "")
+PASSWORD = os.getenv('PASSWORD', "")
 
 @unittest.skipIf(APPLIANCE=="", "APPLIANCE env var must be set to the ip/hostname of a running SNS appliance")
+@unittest.skipIf(PASSWORD=="", "PASSWORD env var must be set to the firewall password")
 class TestFormatIni(unittest.TestCase):
     """ Test INI format """
 
     def setUp(self):
-        self.client = SSLClient(host=APPLIANCE, user='admin', password='adminadmin', sslverifyhost=False)
+        self.client = SSLClient(host=APPLIANCE, user='admin', password=PASSWORD, sslverifyhost=False)
 
         self.maxDiff = 5000
 
@@ -57,7 +55,7 @@ VERSION    : Display server version
         
         expected = """101 code=00a01000 msg="Begin" format="section"
 [Global]
-State=1
+State=0
 RiskHalfLife=21600
 RiskTTL=86400
 [Alarm]
@@ -103,7 +101,8 @@ id=smtp_test_msg type=smtp_conf name="Test SMTP configuration"
 
         expected = """101 code=00a01000 msg="Begin" format="list"
 [Result]
-any
+labo_network
+Network_internals
 100 code=00a00100 msg="Ok\""""
 
         response = self.client.send_command('CONFIG WEBADMIN ACCESS SHOW')

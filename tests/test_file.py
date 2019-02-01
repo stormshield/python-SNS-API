@@ -8,18 +8,16 @@ import tempfile
 import unittest
 from stormshield.sns.sslclient import SSLClient
 
-# APPLIANCE env var must be set to the ip/hostname of a running SNS appliance
-if 'APPLIANCE' not in os.environ:
-    APPLIANCE=""
-else:
-    APPLIANCE=os.environ['APPLIANCE']
+APPLIANCE=os.getenv('APPLIANCE', "")
+PASSWORD = os.getenv('PASSWORD', "")
 
 @unittest.skipIf(APPLIANCE=="", "APPLIANCE env var must be set to the ip/hostname of a running SNS appliance")
+@unittest.skipIf(PASSWORD=="", "PASSWORD env var must be set to the firewall password")
 class TestFormatIni(unittest.TestCase):
     """ Test file upload & download """
 
     def setUp(self):
-        self.client = SSLClient(host=APPLIANCE, user='admin', password='adminadmin', sslverifyhost=False)
+        self.client = SSLClient(host=APPLIANCE, user='admin', password=PASSWORD, sslverifyhost=False)
 
         self.tmpdir = tempfile.TemporaryDirectory()
         self.upload = os.path.join(self.tmpdir.name, 'upload')
@@ -30,7 +28,7 @@ class TestFormatIni(unittest.TestCase):
         self.tmpdir.cleanup()
 
     def test_upload_download(self):
-        """ upload / download """
+        """ Test file upload and download """
 
         #generate a random file
         content = "".join( [random.choice(string.ascii_letters) for i in range(15)] )

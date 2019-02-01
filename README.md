@@ -118,7 +118,7 @@ Concerning the SSL validation:
 
 Warning: tests require a remote SNS appliance.
 
-`$ APPLIANCE=10.0.0.254 python3 setup.py test`
+`$ PASSWORD=password APPLIANCE=10.0.0.254 python3 setup.py test`
 
 
 To run `snscli` from the source folder without install:
