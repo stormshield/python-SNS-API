@@ -82,6 +82,10 @@ CRCTAB = [
 def compute_crc32(data):
     """ Returns the hex string of CRC value of DATA """
 
+    # python2 convert str to bytes
+    if type(data) == str:
+        data = bytearray(data)
+
     n = len(data)
     crc = CRC32_init
 
@@ -92,6 +96,10 @@ def compute_crc32(data):
 
 def update_crc32(data, crc):
     """ Incremental CRC, returns updated CRC. """
+
+    # python2 convert str to bytes
+    if type(data) == str:
+        data = bytearray(data)
 
     n = len(data)
 

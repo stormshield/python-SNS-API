@@ -7,6 +7,7 @@ This module handles SNS API responses and extract section/token/values
 in ini/section format.
 """
 
+import sys
 import re
 from shlex import shlex
 from requests.structures import CaseInsensitiveDict
@@ -50,10 +51,10 @@ class ConfigParser:
         lines = text.splitlines()
 
         # strip serverd headers if needed
-        group = self.SERVERD_HEAD_RE.match(lines[0])
-        if group:
+        match = self.SERVERD_HEAD_RE.match(lines[0])
+        if match:
             del lines[0]
-            self.format = group[1]
+            self.format = match.group(1)
         if self.SERVERD_TAIL_RE.match(lines[-1]):
             del lines[-1]
 
@@ -76,9 +77,9 @@ class ConfigParser:
                 continue
 
             # section header
-            group = self.SECTION_RE.match(line)
-            if group:
-                section = group[1]
+            match = self.SECTION_RE.match(line)
+            if match:
+                section = match.group(1)
                 if self.format == 'section':
                     self.data[section] = CaseInsensitiveDict()
                 else:
@@ -88,6 +89,9 @@ class ConfigParser:
             if self.format == "list":
                 self.data[section].append(line)
             elif self.format == "section_line":
+                # fix encoding for python2
+                if sys.version_info[0] < 3:
+                    line = line.encode('utf-8')
                 # parse token=value token2=value2
                 lexer = shlex(line, posix=True)
                 lexer.wordchars += "=.-*:,"
@@ -95,12 +99,12 @@ class ConfigParser:
                 for word in lexer:
                     # ignore anything else than token=value
                     if '=' in word:
-                        token, value = word.split("=", maxsplit=1)
+                        token, value = word.split("=", 1)
                         parsed[token] = value
                 self.data[section].append(parsed)
             else:
                 # section
-                (token, value) = line.split("=", maxsplit=1)
+                (token, value) = line.split("=", 1)
                 self.data[section][token] = unquote(value)
 
 

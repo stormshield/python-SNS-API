@@ -116,7 +116,7 @@ Concerning the SSL validation:
 
 ## Tests
 
-Warning: tests require a remote SNS appliance.
+Warning: some tests require a remote SNS appliance.
 
 `$ PASSWORD=password APPLIANCE=10.0.0.254 python3 setup.py test`
 

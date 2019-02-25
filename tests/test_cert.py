@@ -4,7 +4,7 @@ import os
 import unittest
 from stormshield.sns.sslclient import SSLClient
 
-APPLIANCE=os.getenv('APPLIANCE', "")
+APPLIANCE = os.getenv('APPLIANCE', "")
 FQDN = os.getenv('FQDN', "")
 PASSWORD = os.getenv('PASSWORD', "")
 CABUNDLE = os.getenv('CABUNDLE', "")
@@ -26,11 +26,11 @@ class TestCert(unittest.TestCase):
             client = SSLClient(host=APPLIANCE, user='admin', password=PASSWORD)
             self.fail("SSLClient should have failed (untrusted CA)")
         except Exception as exception:
-            self.assertTrue(1==1, "SSLClient did not connect (untrusted CA)")
+            self.assertTrue(True, "SSLClient did not connect (untrusted CA)")
         
         try:
             client = SSLClient(host=APPLIANCE, user='admin', password=PASSWORD, sslverifypeer=False)
-            self.assertTrue(1==1, "SSLClient connects with sslverifypeer=True")
+            self.assertTrue(True, "SSLClient connects with sslverifypeer=False")
         except Exception as exception:
             print(exception)
             self.fail("SSLClient did not connect")

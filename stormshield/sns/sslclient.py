@@ -1,4 +1,5 @@
 #!/usr/bin/python
+# -*- coding: utf-8 -*-
 
 """
 stormshield.sns.sslclient
@@ -8,13 +9,14 @@ This module contains SSLClient class to handle SNS API calls
 and Response class to handle API answers.
 """
 
+from __future__ import unicode_literals
 import os
 import ipaddress
 import base64
 import logging
 import re
 import platform
-import xml.etree.ElementTree as ElementTree
+import defusedxml.ElementTree as ElementTree
 import requests
 from requests.adapters import HTTPAdapter, DEFAULT_POOLSIZE, DEFAULT_RETRIES, DEFAULT_POOLBLOCK
 from requests.packages.urllib3.poolmanager import PoolManager
@@ -339,7 +341,7 @@ class SSLClient:
         self.logger.log(logging.DEBUG, request.text)
 
         try:
-            nws_node = ElementTree.fromstring(request.text)
+            nws_node = ElementTree.fromstring(request.content)
             msg = nws_node.attrib['msg']
         except:
             raise AuthenticationError("Can't decode authentication result")
@@ -359,7 +361,7 @@ class SSLClient:
         self.logger.log(logging.DEBUG, request.text)
 
         if request.status_code == requests.codes.OK:
-            nws_node = ElementTree.fromstring(request.text)
+            nws_node = ElementTree.fromstring(request.content)
             ret = int(nws_node.attrib['code'])
             msg = nws_node.attrib['msg']
 
@@ -421,13 +423,13 @@ class SSLClient:
 
         request = self.session.get(
             self.baseurl + '/api/command?sessionid=' + self.sessionid +
-            '&cmd=' + requests.compat.quote(command), # manually done since we need %20 encoding
+            '&cmd=' + requests.compat.quote(command.encode('utf-8')), # manually done since we need %20 encoding
             headers=self.headers)
 
         self.logger.log(logging.DEBUG, request.text)
 
         if request.status_code == requests.codes.OK:
-            nws_node = ElementTree.fromstring(request.text)
+            nws_node = ElementTree.fromstring(request.content)
             code = int(nws_node.attrib['code'])
             self.nws_parse(code)
             serverd = nws_node[0]
@@ -440,7 +442,7 @@ class SSLClient:
                 response = Response(ret=serverd_ret,
                                     code=serverd_code,
                                     msg=serverd_msg,
-                                    output=format_output(request.text),
+                                    output=format_output(request.content),
                                     xml=request.text)
 
                 #multiline answer get the final code
@@ -523,14 +525,14 @@ class SSLClient:
         uploadh.close()
 
         if request.status_code == requests.codes.OK:
-            nws_node = ElementTree.fromstring(request.text)
+            nws_node = ElementTree.fromstring(request.content)
             code = int(nws_node.attrib['code'])
             self.nws_parse(code)
 
             return Response(code=nws_node[0].get('code'),
                             ret=int(nws_node[0].get('ret')),
                             msg=nws_node[0].get('msg'),
-                            output=format_output(request.text),
+                            output=format_output(request.content),
                             xml=request.text)
 
         raise ServerError("HTTP error {}".format(request.status_code))

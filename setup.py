@@ -26,12 +26,15 @@ setuptools.setup(
         'requests',
         'requests_toolbelt',
         'colorlog',
-        'pyreadline; platform_system == "Windows"'
+        'defusedxml',
+        'pyreadline; platform_system == "Windows"',
+        'py2-ipaddress; python_version < "3"'
     ],
     include_package_data=True,
     tests_require=["nose"],
     test_suite='nose.collector',
     classifiers=[
+        "Programming Language :: Python :: 2",
         "Programming Language :: Python :: 3",
         "License :: Apache License 2.0",
         "Operating System :: OS Independent",

@@ -6,7 +6,7 @@ import unittest
 
 from stormshield.sns.sslclient import SSLClient
 
-APPLIANCE=os.getenv('APPLIANCE', "")
+APPLIANCE = os.getenv('APPLIANCE', "")
 PASSWORD = os.getenv('PASSWORD', "")
 
 @unittest.skipIf(APPLIANCE=="", "APPLIANCE env var must be set to the ip/hostname of a running SNS appliance")

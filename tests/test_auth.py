@@ -4,7 +4,7 @@ import os
 import unittest
 from stormshield.sns.sslclient import SSLClient
 
-APPLIANCE=os.getenv('APPLIANCE', "")
+APPLIANCE = os.getenv('APPLIANCE', "")
 SERIAL = os.getenv('SERIAL', "")
 PASSWORD = os.getenv('PASSWORD', "")
 

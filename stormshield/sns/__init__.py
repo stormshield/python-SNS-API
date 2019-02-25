@@ -1,4 +1,4 @@
-__version__ = "1.0.0.beta"
+__version__ = "1.0.0.beta1"
 
 # major.minor.patch
 # major: breaking API change

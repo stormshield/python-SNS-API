@@ -1,7 +1,8 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 
 """ cli to connect to Stormshield Network Security appliances"""
 
+from __future__ import unicode_literals
 import sys
 import os
 import re
@@ -9,7 +10,7 @@ import logging
 import readline
 import getpass
 import atexit
-import xml.dom.minidom
+import defusedxml.minidom
 import begin
 from pygments import highlight
 from pygments.lexers import XmlLexer
@@ -47,20 +48,18 @@ def make_completer():
         return results[state]
     return custom_complete
 
-@begin.start(auto_convert=True, short_args=False, lexical_order=True)
-@begin.logging
-def main(host: 'Remote UTM' = None,
-         ip: 'Remote UTM ip' = None,
-         usercert: 'User certificate file' = None,
-         cabundle: 'CA bundle file' = None,
-         password: 'Password' = None,
-         port: 'Remote port' = 443,
-         user: 'User name' = 'admin',
-         sslverifypeer: 'Strict SSL CA check' = True,
-         sslverifyhost: 'Strict SSL host name check' = True,
-         credentials: 'Privilege list' = None,
-         script: 'Command script' = None,
-         outputformat: 'Output format (ini|xml)' = 'ini'):
+def main(host = None,
+         ip = None,
+         usercert = None,
+         cabundle = None,
+         password = None,
+         port = 443,
+         user = 'admin',
+         sslverifypeer = True,
+         sslverifyhost = True,
+         credentials = None,
+         script = None,
+         outputformat = 'ini'):
 
     for handler in logging.getLogger().handlers:
         if handler.__class__ == logging.StreamHandler:
@@ -123,7 +122,7 @@ def main(host: 'Remote UTM' = None,
                 logging.error(str(exception))
                 sys.exit(1)
             if outputformat == 'xml':
-                print(highlight(xml.dom.minidom.parseString(response.xml).toprettyxml(),
+                print(highlight(defusedxml.minidom.parseString(response.xml).toprettyxml(),
                                 XmlLexer(), TerminalFormatter()))
             else:
                 print(response.output)
@@ -191,7 +190,30 @@ def main(host: 'Remote UTM' = None,
                 logging.error(str(exception))
         else:
             if outputformat == 'xml':
-                print(highlight(xml.dom.minidom.parseString(response.xml).toprettyxml(),
+                print(highlight(defusedxml.minidom.parseString(response.xml).toprettyxml(),
                                 XmlLexer(), TerminalFormatter()))
             else:
                 print(response.output)
+
+# set function parameter annotations manually for compatibility with python2
+main.__annotations__ = {
+            'host': 'Remote UTM',
+            'ip': 'Remote UTM ip',
+            'usercert': 'User certificate file',
+            'cabundle': 'CA bundle file',
+            'password': 'Password',
+            'port': 'Remote port',
+            'user': 'User name',
+            'sslverifypeer': 'Strict SSL CA check',
+            'sslverifyhost': 'Strict SSL host name check',
+            'credentials': 'Privilege list',
+            'script': 'Command script',
+            'outputformat': 'Output format (ini|xml)'
+        }
+# use correct input function with python2
+try:
+    input = raw_input
+except NameError:
+    pass
+
+begin.start(begin.logging(main))

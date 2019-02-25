@@ -1,14 +1,17 @@
 #!/usr/bin/python
+# -*- coding: utf-8 -*-
 
+from __future__ import unicode_literals
 import random
 import string
 import os
 import sys
 import tempfile
 import unittest
+import shutil
 from stormshield.sns.sslclient import SSLClient
 
-APPLIANCE=os.getenv('APPLIANCE', "")
+APPLIANCE = os.getenv('APPLIANCE', "")
 PASSWORD = os.getenv('PASSWORD', "")
 
 @unittest.skipIf(APPLIANCE=="", "APPLIANCE env var must be set to the ip/hostname of a running SNS appliance")
@@ -19,20 +22,22 @@ class TestFormatIni(unittest.TestCase):
     def setUp(self):
         self.client = SSLClient(host=APPLIANCE, user='admin', password=PASSWORD, sslverifyhost=False)
 
-        self.tmpdir = tempfile.TemporaryDirectory()
-        self.upload = os.path.join(self.tmpdir.name, 'upload')
-        self.download = os.path.join(self.tmpdir.name, 'download')
+        self.tmpdir = tempfile.mkdtemp()
+        self.upload = os.path.join(self.tmpdir, 'upload')
+        self.download = os.path.join(self.tmpdir, 'download')
 
     def tearDown(self):
         self.client.disconnect()
-        self.tmpdir.cleanup()
+        shutil.rmtree(self.tmpdir, ignore_errors=True)
 
     def test_upload_download(self):
         """ Test file upload and download """
 
+        letters = string.ascii_letters + 'éèàÎîô'
+
         #generate a random file
-        content = "".join( [random.choice(string.ascii_letters) for i in range(15)] )
-        with open(self.upload, "w") as fh:
+        content = ("".join( [random.choice(letters) for i in range(2500)] )).encode('utf-8')
+        with open(self.upload, "wb") as fh:
             fh.write(content)
 
         response = self.client.send_command('CONFIG COMMUNICATION EMAIL TEMPLATE UPLOAD pvm_summary < ' + self.upload)
@@ -43,7 +48,7 @@ class TestFormatIni(unittest.TestCase):
         response = self.client.send_command('CONFIG COMMUNICATION EMAIL TEMPLATE DOWNLOAD pvm_summary > ' + self.download)
         self.assertEqual(response.ret, 100)
 
-        with open(self.download, "r") as fh:
+        with open(self.download, "rb") as fh:
             downloaded = fh.read()
 
         self.assertEqual(content, downloaded)

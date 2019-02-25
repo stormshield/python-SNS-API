@@ -4,3 +4,4 @@ build
 .eggs
 stormshield.sns.sslclient.egg-info
 __pycache__
+*.pyc
