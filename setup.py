@@ -1,16 +1,18 @@
 #!/usr/bin/python
 
 import setuptools
+import os
 
-import stormshield.sns
-
+version = {}
+with open(os.path.join('stormshield', 'sns', 'sslclient', '__version__.py'), 'r') as fh:
+    exec(fh.read(), version)
 
 with open("README.md", "r") as fh:
     long_description = fh.read()
 
 setuptools.setup(
     name="stormshield.sns.sslclient",
-    version=stormshield.sns.__version__,
+    version=version['__version__'],
     author="Remi Pauchet",
     author_email="remi.pauchet@stormshield.eu",
     description="SSL API client for Stormshield Network Security appliances",
@@ -19,11 +21,12 @@ setuptools.setup(
     url="https://github.com/stormshield/python-SNS-API",
     license='Apache License 2.0',
     packages=setuptools.find_packages(),
-    scripts=['bin/snscli'],
+    entry_points={
+        'console_scripts': ['snscli=stormshield.sns.cli:main'],
+    },
     install_requires=[
         'pygments',
-        'begins',
-        'requests',
+        'requests[socks]',
         'requests_toolbelt',
         'colorlog',
         'defusedxml',
@@ -38,7 +41,7 @@ setuptools.setup(
         "Programming Language :: Python :: 3",
         "License :: Apache License 2.0",
         "Operating System :: OS Independent",
-        'Topic :: System :: Networking'
-        'Environment :: Console'
+        "Topic :: System :: Networking",
+        "Environment :: Console"
     ],
 )

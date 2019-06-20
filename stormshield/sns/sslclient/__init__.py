@@ -19,13 +19,21 @@ import platform
 import defusedxml.ElementTree as ElementTree
 import requests
 from requests.adapters import HTTPAdapter, DEFAULT_POOLSIZE, DEFAULT_RETRIES, DEFAULT_POOLBLOCK
-from requests.packages.urllib3.poolmanager import PoolManager
+from urllib3.poolmanager import PoolManager, proxy_from_url
+from requests.utils import get_auth_from_url
+from requests.exceptions import InvalidSchema
 import requests.compat
 from requests_toolbelt.multipart.encoder import MultipartEncoder
+try:
+    from urllib3.contrib.socks import SOCKSProxyManager
+except ImportError:
+    def SOCKSProxyManager(*args, **kwargs):
+        raise InvalidSchema("Missing dependencies for SOCKS support.")
 
-import stormshield.sns
 from stormshield.sns.configparser import ConfigParser
 import stormshield.sns.crc as snscrc
+
+from .__version__ import __version__
 
 #disable ssl warnings, we have --sslverify* for that
 requests.packages.urllib3.disable_warnings(
@@ -43,6 +51,34 @@ class HostNameIgnoringAdapter(HTTPAdapter):
                                        maxsize=maxsize,
                                        block=block,
                                        assert_hostname=False)
+
+    def proxy_manager_for(self, proxy, **proxy_kwargs):
+        if proxy in self.proxy_manager:
+            manager = self.proxy_manager[proxy]
+        elif proxy.lower().startswith('socks'):
+            username, password = get_auth_from_url(proxy)
+            manager = self.proxy_manager[proxy] = SOCKSProxyManager(
+                proxy,
+                username=username,
+                password=password,
+                num_pools=self._pool_connections,
+                maxsize=self._pool_maxsize,
+                block=self._pool_block,
+                assert_hostname=False,
+                **proxy_kwargs
+            )
+        else:
+            proxy_headers = self.proxy_headers(proxy)
+            manager = self.proxy_manager[proxy] = proxy_from_url(
+                proxy,
+                proxy_headers=proxy_headers,
+                num_pools=self._pool_connections,
+                maxsize=self._pool_maxsize,
+                block=self._pool_block,
+                assert_hostname=False,
+                **proxy_kwargs)
+
+        return manager
 
 class DNSResolverHTTPSAdapter(HTTPAdapter):
     """ HTTP adapter to check peer common_name with provided host name """
@@ -224,7 +260,7 @@ class SSLClient:
 
     def __init__(self, user='admin', password=None, host=None, ip=None, port=443, cabundle=None,
                  sslverifypeer=True, sslverifyhost=True, credentials=None,
-                 usercert=None, autoconnect=True):
+                 usercert=None, autoconnect=True, proxy=None):
         """:class:`SSLclient <SSLClient>` constructor.
 
         :param user: Optional user name.
@@ -238,6 +274,7 @@ class SSLClient:
         :param credentials: Optional list of requested privileges.
         :param usercert: Optional user certificate.
         :param autoconnect: Connect to the appliance at initialization
+        :param proxy: https proxy url (socks5://user:pass@host:port  http://user:password@host/)
         """
 
         self.user = user
@@ -257,6 +294,7 @@ class SSLClient:
         self.dl_size = 0
         self.dl_crc = ""
         self.autoconnect = autoconnect
+        self.proxy = proxy
 
         if host is None:
             raise MissingHost("Host parameter must be provided")
@@ -266,7 +304,7 @@ class SSLClient:
             raise MissingAuth("User certificate not found")
         if cabundle is None:
             # use default cabundle
-            self.cabundle = os.path.join(os.path.dirname(__file__), 'bundle.ca')
+            self.cabundle = os.path.normpath(os.path.join(os.path.dirname(__file__), "..", 'bundle.ca'))
         if not os.path.isfile(self.cabundle):
             raise MissingCABundle("Certificate authority bunble not found")
 
@@ -281,7 +319,7 @@ class SSLClient:
 
         self.headers = {
             'user-agent': 'stormshield.sns.sslclient/{} ({})'.format(
-                stormshield.sns.__version__, platform.platform())
+                __version__, platform.platform())
         }
 
         self.session = requests.Session()
@@ -306,6 +344,9 @@ class SSLClient:
         if self.usercert is not None:
             self.session.cert = self.usercert
 
+        if self.proxy:
+            self.session.proxies = { "https": self.proxy}
+
         self.logger = logging.getLogger()
 
         if self.autoconnect:
@@ -314,13 +355,13 @@ class SSLClient:
     @staticmethod
     def get_completer():
         """ Get the path to the installed cmd.complete file """
-        return os.path.join(os.path.dirname(__file__), 'cmd.complete')
+        return os.path.normpath(os.path.join(os.path.dirname(__file__), "..", 'cmd.complete'))
 
     def connect(self):
         """ Connect to the server """
 
-        self.logger.log(logging.INFO, 'Connecting to %s on port %d with user %s',
-                        self.host, self.port, self.user)
+        self.logger.log(logging.INFO, 'Connecting to %s on port %d with user %s%s',
+                        self.host, self.port, self.user, " (proxy {})".format(self.proxy) if self.proxy else "")
 
         # 1. Authentication and get cookie
         if self.usercert is not None:
@@ -487,7 +528,7 @@ class SSLClient:
                         size += len(chunk)
                         crc = snscrc.update_crc32(chunk, crc)
             except Exception as exception:
-                print(str(exception))
+                self.logger.log(logging.ERROR, str(exception))
                 raise FileError("Can't save file")
 
             if size != self.dl_size:

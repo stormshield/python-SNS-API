@@ -1,4 +1,4 @@
-# pySNSAPI
+# python-SNS-API
 
 A Python client for the Stormshield Network Security appliance SSL API.
 
@@ -103,7 +103,11 @@ Concerning the SSL validation:
 * For the first connection to a new appliance, ssl host name verification can be bypassed with `--no-sslverifyhost` option.
 * To connect to a known appliance with the default certificate use `--host <serial> --ip <ip address>` to validate the peer certificate.
 * If a custom CA and certificate is installed, use `--host myfirewall.tld --cabundle <ca.pem>`.
-* For client certificate authentication, the expected format is a pem file with the certificate and the unencrypted key concatenated.
+* For client certificate authentication, the expected format is a PEM file with the certificate and the unencrypted key concatenated.
+
+## Proxy
+
+The library and `snscli` tool support HTTP and SOCKS proxies, use `--proxy scheme://user:password@host:port` option.
 
 
 ## Build
@@ -125,7 +129,7 @@ Warning: some tests require a remote SNS appliance.
 
 To run `snscli` from the source folder without install:
 
-`$ PYTHONPATH=. python3 ./bin/snscli --help`
+`$ python3 stormshield/sns/cli.py --help`
 
 
 ## Links
