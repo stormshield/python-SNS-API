@@ -117,6 +117,12 @@ The library and `snscli` tool support HTTP and SOCKS proxies, use `--proxy schem
 
 ## Install
 
+## From PyPI:
+
+`$ pip3 install stormshield.sns.sslclient`
+
+## From source:
+
 `$ python3 setup.py install`
 
 
