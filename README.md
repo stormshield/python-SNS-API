@@ -135,7 +135,7 @@ Warning: some tests require a remote SNS appliance.
 
 To run `snscli` from the source folder without install:
 
-`$ python3 stormshield/sns/cli.py --help`
+`$ PYTHONPATH=. python3 stormshield/sns/cli.py --help`
 
 
 ## Links

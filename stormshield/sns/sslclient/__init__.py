@@ -123,7 +123,7 @@ class Response():
 
 def quote(value):
     """ Quote value if needed """
-    if ' ' in value:
+    if value and type(value) == str and ' ' in value:
         return '"' + value + '"'
     return value
 
