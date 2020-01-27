@@ -3,6 +3,7 @@
 import os
 import sys
 import unittest
+import re
 
 from stormshield.sns.sslclient import SSLClient
 
@@ -25,29 +26,14 @@ class TestFormatIni(unittest.TestCase):
     def test_raw(self):
         """ raw format """
 
-        expected = """101 code=00a01000 msg="Begin" format="raw"
-AUTH       : User authentication
-CHPWD      : Return if it's necessary to update password or not
-CONFIG     : Firewall configuration functions
-GLOBALADMIN : Global administration
-HA         : HA functions
-HELP       : Display available commands
-LIST       : Display the list of connected users, show user rights (Level) and rights for current session (SessionLevel).
-LOG        : Log related functions.Everywhere a timezone is needed, if not specified the command is treated with firewall timezone setting.
-MODIFY     : Get / lose the modify or the mon_write right
-MONITOR    : Monitor related functions
-NOP        : Do nothing but avoid disconnection from server.
-PKI        : show or update the pki
-QUIT       : Log off
-REPORT     : Handling of reports
-SYSTEM     : System commands
-USER       : User related functions
-VERSION    : Display server version
+        expected_re = """101 code=00a01000 msg="Begin" format="raw"
+AUTH.*
+CHPWD.*
 100 code=00a00100 msg="Ok\""""
 
         response = self.client.send_command('HELP')
 
-        self.assertEqual(response.output, expected)
+        self.assertTrue(re.match(expected_re, response.output, re.MULTILINE|re.DOTALL))
         self.assertEqual(response.ret, 100)
 
     def test_section(self):
@@ -115,7 +101,7 @@ Network_internals
 
         expected = """101 code=00a01000 msg="Begin" format="xml"
 <data format="xml"><filters total_lines="5">
-<separator collapse="0" color="c0c0c0" comment="Remote Management: Go to System -&gt; Configuration to setup the web administration application access" first_ruleid="1" nb_elements="2" position="1" />
+<separator collapse="0" color="c0c0c0" comment="Remote Management: Go to System - Configuration to setup the web administration application access" first_ruleid="1" nb_elements="2" position="1" />
 <filter action="pass" comment="Admin from everywhere" index="1" position="2" status="active" type="local_filter_slot"><noconnlog disk="0" ipfix="0" syslog="0" /><from><target type="any" value="any" /></from><to><port type="single" value="firewall_srv" /><port type="single" value="https" /><target type="group" value="firewall_all" /></to></filter>
 <filter action="pass" comment="Allow Ping from everywhere" icmp_code="0" icmp_type="8" index="2" ipproto="icmp" position="3" proto="none" status="active" type="local_filter_slot"><noconnlog disk="0" ipfix="0" syslog="0" /><from><target type="any" value="any" /></from><to><target type="group" value="firewall_all" /></to></filter>
 <separator collapse="0" color="c0c0c0" comment="Default policy" first_ruleid="3" nb_elements="1" position="4" />
