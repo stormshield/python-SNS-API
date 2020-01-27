@@ -60,7 +60,7 @@ class ConfigParser:
 
         text = "\n".join(lines)
 
-        if self.format == 'raw':
+        if self.format == 'raw' or self.format == 'xml':
             # plain data, no parsing
             self.data = text
             return

@@ -17,6 +17,7 @@ import logging
 import re
 import platform
 import defusedxml.ElementTree as ElementTree
+from xml.etree import ElementTree as Et
 import requests
 from requests.adapters import HTTPAdapter, DEFAULT_POOLSIZE, DEFAULT_RETRIES, DEFAULT_POOLBLOCK
 from urllib3.poolmanager import PoolManager, proxy_from_url
@@ -128,7 +129,7 @@ def quote(value):
     return value
 
 def format_output(output):
-    """ Format command output in ini/section format"""
+    """ Format command output in ini/section or text format"""
     nws_node = ElementTree.fromstring(output)
     serverd_node = nws_node[0]
     ini = '{} code={} msg="{}"'.format(serverd_node.get('ret'),
@@ -161,6 +162,9 @@ def format_output(output):
                 ini += '[{}]\n'.format(section_node.get('title'))
                 for line_node in section_node:
                     ini += "{}\n".format(line_node.text)
+        elif node_format == 'xml':
+            # display xml data node
+            ini += Et.tostring(data_node).decode() + "\n"
         serverd_node = nws_node[1]
         ini += '{} code={} msg="{}"'.format(serverd_node.get('ret'),
                                             serverd_node.get('code'),

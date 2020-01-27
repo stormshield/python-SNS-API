@@ -110,5 +110,24 @@ Network_internals
         self.assertEqual(response.output, expected)
         self.assertEqual(response.ret, 100)
 
+    def test_xml(self):
+        """ xml text output """
+
+        expected = """101 code=00a01000 msg="Begin" format="xml"
+<data format="xml"><filters total_lines="5">
+<separator collapse="0" color="c0c0c0" comment="Remote Management: Go to System -&gt; Configuration to setup the web administration application access" first_ruleid="1" nb_elements="2" position="1" />
+<filter action="pass" comment="Admin from everywhere" index="1" position="2" status="active" type="local_filter_slot"><noconnlog disk="0" ipfix="0" syslog="0" /><from><target type="any" value="any" /></from><to><port type="single" value="firewall_srv" /><port type="single" value="https" /><target type="group" value="firewall_all" /></to></filter>
+<filter action="pass" comment="Allow Ping from everywhere" icmp_code="0" icmp_type="8" index="2" ipproto="icmp" position="3" proto="none" status="active" type="local_filter_slot"><noconnlog disk="0" ipfix="0" syslog="0" /><from><target type="any" value="any" /></from><to><target type="group" value="firewall_all" /></to></filter>
+<separator collapse="0" color="c0c0c0" comment="Default policy" first_ruleid="3" nb_elements="1" position="4" />
+<filter action="block" comment="Block all" index="3" position="5" status="active" type="local_filter_slot"><noconnlog disk="0" ipfix="0" syslog="0" /><from><target type="any" value="any" /></from><to><target type="any" value="any" /></to></filter>
+</filters>
+</data>
+100 code=00a00100 msg="Ok\""""
+
+        response = self.client.send_command('CONFIG FILTER EXPLICIT index=1 type=filter output=xml')
+
+        self.assertEqual(response.output, expected)
+        self.assertEqual(response.ret, 100)
+
 if __name__ == '__main__':
     unittest.main()
