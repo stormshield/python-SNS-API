@@ -22,6 +22,12 @@ from colorlog import LevelFormatter
 from stormshield.sns.sslclient import SSLClient, ServerError
 from stormshield.sns.sslclient.__version__ import __version__ as libversion
 
+# define missing exception for python2
+try:
+    FileNotFoundError
+except NameError:
+    FileNotFoundError = IOError
+
 OUTPUT_LEVELV_NUM = 60 # log command response
 COMMAND_LEVELV_NUM = 59 # log command input
 FORMATTER = LevelFormatter(
