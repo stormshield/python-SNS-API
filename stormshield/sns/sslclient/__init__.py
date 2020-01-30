@@ -124,8 +124,12 @@ class Response():
 
 def quote(value):
     """ Quote value if needed """
-    if value and type(value) == str and ' ' in value:
-        return '"' + value + '"'
+    try:
+        if value and (type(value) == str or type(value) == unicode) and ' ' in value:
+            return '"' + value + '"'
+    except:
+        # in python3 unicode class doesn't exists
+        pass
     return value
 
 def format_output(output):
