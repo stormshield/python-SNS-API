@@ -268,7 +268,7 @@ class SSLClient:
 
     def __init__(self, user='admin', password=None, host=None, ip=None, port=443, cabundle=None,
                  sslverifypeer=True, sslverifyhost=True, credentials=None,
-                 usercert=None, autoconnect=True, proxy=None):
+                 usercert=None, autoconnect=True, proxy=None, timeout=None):
         """:class:`SSLclient <SSLClient>` constructor.
 
         :param user: Optional user name.
@@ -283,6 +283,7 @@ class SSLClient:
         :param usercert: Optional user certificate.
         :param autoconnect: Connect to the appliance at initialization
         :param proxy: https proxy url (socks5://user:pass@host:port  http://user:password@host/)
+        :param timeout: connection and read timeout in seconds
         """
 
         self.user = user
@@ -303,6 +304,7 @@ class SSLClient:
         self.dl_crc = ""
         self.autoconnect = autoconnect
         self.proxy = proxy
+        self.conn_options = {}
 
         if host is None:
             raise MissingHost("Host parameter must be provided")
@@ -355,6 +357,9 @@ class SSLClient:
         if self.proxy:
             self.session.proxies = { "https": self.proxy}
 
+        if timeout is not None:
+            self.conn_options = { "timeout": timeout }
+
         self.logger = logging.getLogger()
 
         if self.autoconnect:
@@ -376,7 +381,7 @@ class SSLClient:
             # user cert authentication
             request = self.session.get(
                 self.baseurl + '/auth/admin.html?sslcert=1&app={}'.format(self.app),
-                headers=self.headers)
+                headers=self.headers, **self.conn_options)
         else:
             # password authentication
             request = self.session.post(
@@ -385,7 +390,8 @@ class SSLClient:
                     'uid':base64.b64encode(self.user.encode('utf-8')),
                     'pswd':base64.b64encode(self.password.encode('utf-8')),
                     'app':self.app},
-                headers=self.headers)
+                headers=self.headers,
+                **self.conn_options)
 
         self.logger.log(logging.DEBUG, request.text)
 
@@ -405,7 +411,8 @@ class SSLClient:
         request = self.session.post(
             self.baseurl + '/api/auth/login',
             data=data,
-            headers=self.headers)
+            headers=self.headers,
+            **self.conn_options)
 
         self.logger.log(logging.DEBUG, request.text)
 
@@ -435,7 +442,7 @@ class SSLClient:
 
         request = self.session.get(
             self.baseurl + '/api/auth/logout?sessionid=' + self.sessionid,
-            headers=self.headers)
+            headers=self.headers, **self.conn_options)
 
         if request.status_code == requests.codes.OK:
             self.logger.log(logging.INFO, 'Disconnected from %s', self.host)
@@ -473,7 +480,7 @@ class SSLClient:
         request = self.session.get(
             self.baseurl + '/api/command?sessionid=' + self.sessionid +
             '&cmd=' + requests.compat.quote(command.encode('utf-8')), # manually done since we need %20 encoding
-            headers=self.headers)
+            headers=self.headers,  **self.conn_options)
 
         self.logger.log(logging.DEBUG, request.text)
 
@@ -524,7 +531,8 @@ class SSLClient:
         request = self.session.get(
             self.baseurl + '/api/download/tmp.file?sessionid=' + self.sessionid,
             headers=self.headers,
-            stream=True)
+            stream=True,
+            **self.conn_options)
 
         if request.status_code == requests.codes.OK:
             size = 0
@@ -569,7 +577,8 @@ class SSLClient:
         request = self.session.post(
             self.baseurl + '/api/upload?sessionid=' + self.sessionid,
             headers=headers,
-            data=data)
+            data=data,
+            **self.conn_options)
 
         uploadh.close()
 

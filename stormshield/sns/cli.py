@@ -84,6 +84,7 @@ def main():
     group.add_argument("-i", "--ip",    help="Remote UTM ip", default=None)
     group.add_argument("-P", "--port",  help="Remote port",   default=443, type=int)
     group.add_argument("--proxy",       help="Proxy URL (scheme://user:password@host:port)", default=None)
+    group.add_argument("-t", "--timeout",  help="Connection timeout in seconds", default=-1, type=int)
 
     group = parser.add_argument_group("Authentication parameters")
     group.add_argument("-u", "--user",     help="User name",             default="admin")
@@ -120,6 +121,7 @@ def main():
     password = args.password
     port = args.port
     proxy = args.proxy
+    timeout = args.timeout
     user = args.user
     sslverifypeer = args.sslverifypeer
     sslverifyhost = args.sslverifyhost
@@ -195,11 +197,14 @@ def main():
     if password is None and usercert is None:
         password = getpass.getpass()
 
+    if timeout == -1:
+        timeout = None
+
     try:
         client = SSLClient(
             host=host, ip=ip, port=port, user=user, password=password,
             sslverifypeer=sslverifypeer, sslverifyhost=sslverifyhost,
-            credentials=credentials, proxy=proxy,
+            credentials=credentials, proxy=proxy, timeout=timeout,
             usercert=usercert, cabundle=cabundle, autoconnect=False)
     except Exception as exception:
         logging.error(str(exception))
