@@ -516,11 +516,13 @@ class SSLClient:
                     data = serverd.find('data')
                     # keep size and crc for further verification
                     if data.get('format') == 'section':
+                        # <data format="section"><section title="Result"><key name="format" value="base64,crc=923B2C86,size=952"/>
                         key = data.find('section').find('key')
                         values = key.get('value').split(',')
                         self.dl_size = int(values[2].split('=')[1])
                         self.dl_crc = values[1].split('=')[1]
                     else:
+                        # <data format="raw"><crc>439B852</crc><size>5096
                         self.dl_size = int(data.find('size').text)
                         self.dl_crc = data.find('crc').text
                     if filename:
