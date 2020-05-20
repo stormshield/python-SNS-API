@@ -515,14 +515,14 @@ class SSLClient:
                 if serverd_code == self.SERVERD_WAIT_DOWNLOAD:
                     data = serverd.find('data')
                     # keep size and crc for further verification
-                    if data.get('format') == 'raw':
-                        self.dl_size = int(data.find('size').text)
-                        self.dl_crc = data.find('crc').text
-                    else:
+                    if data.get('format') == 'section':
                         key = data.find('section').find('key')
                         values = key.get('value').split(',')
                         self.dl_size = int(values[2].split('=')[1])
                         self.dl_crc = values[1].split('=')[1]
+                    else:
+                        self.dl_size = int(data.find('size').text)
+                        self.dl_crc = data.find('crc').text
                     if filename:
                         return self.download(filename)
                     return response
