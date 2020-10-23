@@ -173,7 +173,7 @@ type=host global=0 name=myobject ip=1.2.3.4 modify=1 comment= mac=00:11:22:33:44
         self.assertEqual(expected, config.data)
 
     def test_slash_in_value(self):
-        """ test parsing of value with slash character """
+        """ Test parsing of value with slash character """
 
         input = """101 code=00a01000 msg="Begin" format="section_line"
 [StaticRoutes]
@@ -183,6 +183,21 @@ Remote=remote_net Address=172.21.0.0/24 Interface=out Gateway=remote_gw Protecte
         expected = {'StaticRoutes': [
             {'Comment': '', 'Remote': 'remote_net', 'State': '1', 'Protected': '0',
              'Address': '172.21.0.0/24', 'Interface': 'out', 'Gateway': 'remote_gw'}]}
+
+        config = ConfigParser(input)
+        self.assertEqual(expected, config.data)
+
+    def test_arobase_in_value(self):
+        """ Test parsing of value with @ character """
+
+        input = """101 code=00a01000 msg="Begin" format="section_line"
+[Result]
+ruleid=1 state=on action=pass from=*@* to=*@* comment="default rule (pass all)"
+100 code=00a00100 msg="Ok"\""""
+
+        expected = {'Result': [
+            {'ruleid': '1', 'state': 'on', 'action': 'pass', 'from': '*@*',
+             'to': '*@*', 'comment': 'default rule (pass all)'}]}
 
         config = ConfigParser(input)
         self.assertEqual(expected, config.data)
