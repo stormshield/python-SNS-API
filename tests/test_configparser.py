@@ -202,6 +202,20 @@ ruleid=1 state=on action=pass from=*@* to=*@* comment="default rule (pass all)"
         config = ConfigParser(input)
         self.assertEqual(expected, config.data)
 
+    def test_quote_in_token(self):
+        """ Test parsing of token with ' character """
+
+        input = """101 code=00a01000 msg="Begin" format="section_line"
+[Object]
+type=group global=0 name=it's_a_test nb_elements=2 modify=1 comment= used=0
+100 code=00a00100 msg="Ok"\""""
+
+        expected = {"Object": [
+            {"type":"group", "global":"0", "name":"it's_a_test",
+             "nb_elements":"2", "modify":"1", "comment":"", "used":"0"}]}
+
+        config = ConfigParser(input)
+        self.assertEqual(expected, config.data)
 
 if __name__ == '__main__':
     unittest.main()

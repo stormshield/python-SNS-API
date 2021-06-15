@@ -94,7 +94,8 @@ class ConfigParser:
                     line = line.encode('utf-8')
                 # parse token=value token2=value2
                 lexer = shlex(line, posix=True)
-                lexer.wordchars += "=.-*:,/@"
+                lexer.wordchars += "=.-*:,/@'"
+                lexer.quotes = '"'
                 parsed = {}
                 for word in lexer:
                     # ignore anything else than token=value
