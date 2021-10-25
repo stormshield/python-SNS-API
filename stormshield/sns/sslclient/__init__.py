@@ -398,8 +398,8 @@ class SSLClient:
         try:
             nws_node = ElementTree.fromstring(request.content)
             msg = nws_node.attrib['msg']
-        except:
-            raise AuthenticationError("Can't decode authentication result")
+        except (ElementTree.ParseError, KeyError):
+            raise ServerError("Can't decode authentication result")
 
         if  msg != self.AUTH_SUCCESS:
             raise AuthenticationError("Authentication failed")
@@ -457,7 +457,9 @@ class SSLClient:
         if code == self.SSL_SERVERD_OK:
             return
 
-        if code in self.SSL_SERVERD_MSG:
+        if code == self.SSL_SERVERD_AUTH_ERROR:
+            raise AuthenticationError(self.SSL_SERVERD_MSG[code])
+        elif code in self.SSL_SERVERD_MSG:
             raise ServerError(self.SSL_SERVERD_MSG[code])
         else:
             raise ServerError("Unknown error")
