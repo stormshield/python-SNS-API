@@ -635,6 +635,9 @@ config.object.protocol.new
 config.object.qos
 config.object.qos.activate
 config.object.qos.drop
+config.object.qos.interface.set
+config.object.qos.interface.show
+config.object.qos.interface.remove
 config.object.qos.qid
 config.object.qos.qid.add
 config.object.qos.qid.check
@@ -642,6 +645,9 @@ config.object.qos.qid.list
 config.object.qos.qid.remove
 config.object.qos.qid.rename
 config.object.qos.set
+config.object.qos.tbr.set
+config.object.qos.tbr.show
+config.object.qos.tbr.remove
 config.object.qos.show
 config.object.rename
 config.object.router
