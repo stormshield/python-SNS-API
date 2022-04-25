@@ -266,13 +266,14 @@ class SSLClient:
 
     CHUNK_SIZE = 10240 # bytes
 
-    def __init__(self, user='admin', password=None, host=None, ip=None, port=443, cabundle=None,
+    def __init__(self, user='admin', password=None, totp=None, host=None, ip=None, port=443, cabundle=None,
                  sslverifypeer=True, sslverifyhost=True, credentials=None,
                  usercert=None, autoconnect=True, proxy=None, timeout=None):
         """:class:`SSLclient <SSLClient>` constructor.
 
         :param user: Optional user name.
         :param password: Optional password.
+        :param totp: Optional time-based one time password.
         :param host: hostname to connect or certificate common name (appliance serial).
         :param ip: Optional ip address to connect.
         :param port: Optional port number.
@@ -288,6 +289,7 @@ class SSLClient:
 
         self.user = user
         self.password = password
+        self.totp = totp
         self.host = host
         self.ip = ip
         self.port = port
@@ -308,7 +310,8 @@ class SSLClient:
 
         if host is None:
             raise MissingHost("Host parameter must be provided")
-        if password is None and usercert is None:
+        if password is None \
+           and ( usercert is None or totp is not None ):
             raise MissingAuth("Password parameter must be provided")
         if usercert is not None and not os.path.isfile(usercert):
             raise MissingAuth("User certificate not found")
@@ -384,14 +387,25 @@ class SSLClient:
                 headers=self.headers, **self.conn_options)
         else:
             # password authentication
-            request = self.session.post(
-                self.baseurl + '/auth/admin.html',
-                data={
-                    'uid':base64.b64encode(self.user.encode('utf-8')),
-                    'pswd':base64.b64encode(self.password.encode('utf-8')),
-                    'app':self.app},
-                headers=self.headers,
-                **self.conn_options)
+            if totp is None:
+                request = self.session.post(
+                    self.baseurl + '/auth/admin.html',
+                    data={
+                        'uid':base64.b64encode(self.user.encode('utf-8')),
+                        'pswd':base64.b64encode(self.password.encode('utf-8')),
+                        'app':self.app},
+                    headers=self.headers,
+                    **self.conn_options)
+            else:
+                request = self.session.post(
+                    self.baseurl + '/auth/admin.html',
+                    data={
+                        'uid':base64.b64encode(self.user.encode('utf-8')),
+                        'pswd':base64.b64encode(self.password.encode('utf-8')),
+                        'totp':base64.b64encode(self.totp.encode('utf-8')),
+                        'app':self.app},
+                    headers=self.headers,
+                    **self.conn_options)
 
         self.logger.log(logging.DEBUG, request.text)
 
