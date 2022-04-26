@@ -19,7 +19,7 @@ from pygments.lexers import XmlLexer
 from pygments.formatters import TerminalFormatter
 from colorlog import LevelFormatter
 
-from stormshield.sns.sslclient import SSLClient, ServerError
+from stormshield.sns.sslclient import SSLClient, ServerError, TOTPNeededError
 from stormshield.sns.sslclient.__version__ import __version__ as libversion
 
 # define missing exception for python2
@@ -87,9 +87,10 @@ def main():
     group.add_argument("-t", "--timeout",  help="Connection timeout in seconds", default=-1, type=int)
 
     group = parser.add_argument_group("Authentication parameters")
-    group.add_argument("-u", "--user",     help="User name",             default="admin")
-    group.add_argument("-p", "--password", help="Password",              default=None)
-    group.add_argument("-U", "--usercert", help="User certificate file", default=None)
+    group.add_argument("-u", "--user",     help="User name",                    default="admin")
+    group.add_argument("-p", "--password", help="Password",                     default=None)
+    group.add_argument("-t", "--totp",     help="Time-based one time password", default=None)
+    group.add_argument("-U", "--usercert", help="User certificate file",        default=None)
 
     group = parser.add_argument_group("SSL parameters")
     group.add_argument("-C", "--cabundle",         help="CA bundle file",                     default=None)
@@ -119,6 +120,7 @@ def main():
     usercert = args.usercert
     cabundle = args.cabundle
     password = args.password
+    totp = args.totp
     port = args.port
     proxy = args.proxy
     timeout = args.timeout
@@ -200,27 +202,36 @@ def main():
     if timeout == -1:
         timeout = None
 
-    try:
-        client = SSLClient(
-            host=host, ip=ip, port=port, user=user, password=password,
-            sslverifypeer=sslverifypeer, sslverifyhost=sslverifyhost,
-            credentials=credentials, proxy=proxy, timeout=timeout,
-            usercert=usercert, cabundle=cabundle, autoconnect=False)
-    except Exception as exception:
-        logging.error(str(exception))
-        sys.exit(1)
-
-    try:
-        client.connect()
-    except Exception as exception:
-        search = re.search(r'doesn\'t match \'(.*)\'', str(exception))
-        if search:
-            logging.error(("Appliance name can't be verified, to force connection "
-                           "use \"--host %s --ip %s\" or \"--no-sslverifyhost\" "
-                           "options"), search.group(1), host)
-        else:
+    # try without totp, retry if totp is needed
+    for i in range(0, 2):
+        try:
+            client = SSLClient(
+                host=host, ip=ip, port=port, user=user, password=password, totp=totp,
+                sslverifypeer=sslverifypeer, sslverifyhost=sslverifyhost,
+                credentials=credentials, proxy=proxy, timeout=timeout,
+                usercert=usercert, cabundle=cabundle, autoconnect=False)
+        except Exception as exception:
             logging.error(str(exception))
-        sys.exit(1)
+            sys.exit(1)
+
+        try:
+            client.connect()
+        except TOTPNeededError as exception:
+            if i == 0 and totp is None:
+                totp = getpass.getpass("totp:")
+                continue
+            else:
+                logging.error(str(exception))
+                sys.exit(1)
+        except Exception as exception:
+            search = re.search(r'doesn\'t match \'(.*)\'', str(exception))
+            if search:
+                logging.error(("Appliance name can't be verified, to force connection "
+                               "use \"--host %s --ip %s\" or \"--no-sslverifyhost\" "
+                               "options"), search.group(1), host)
+            else:
+                logging.error(str(exception))
+            sys.exit(1)
 
     # disconnect gracefuly at exit
     atexit.register(client.disconnect)
