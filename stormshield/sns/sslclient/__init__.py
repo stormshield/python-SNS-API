@@ -184,6 +184,9 @@ class MissingAuth(ValueError):
 class MissingCABundle(ValueError):
     """ The certificate authority bundle is missing """
 
+class TOTPNeededError(Exception):
+    """ Time-base one time password needed """
+
 class AuthenticationError(Exception):
     """ authentication failed """
 
@@ -261,6 +264,7 @@ class SSLClient:
     SERVERD_WAIT_UPLOAD = "00a00300"
     AUTH_SUCCESS = "AUTH_SUCCESS"
     AUTH_FAILED = "AUTH_FAILED"
+    NEED_TOTP_AUTH = "NEED_TOTP_AUTH"
 
     fileregexp = re.compile(r'(.*)\s*(\<|\>)\s*(.*)\s*')
 
@@ -310,9 +314,10 @@ class SSLClient:
 
         if host is None:
             raise MissingHost("Host parameter must be provided")
-        if password is None \
-           and ( usercert is None or totp is not None ):
+        if password is None and usercert is None:
             raise MissingAuth("Password parameter must be provided")
+        if password is None and totp is not None:
+            raise MissingAuth("Password parameter must be provided when totp parameter is provided")
         if usercert is not None and not os.path.isfile(usercert):
             raise MissingAuth("User certificate not found")
         if cabundle is None:
@@ -387,25 +392,18 @@ class SSLClient:
                 headers=self.headers, **self.conn_options)
         else:
             # password authentication
-            if totp is None:
-                request = self.session.post(
-                    self.baseurl + '/auth/admin.html',
-                    data={
-                        'uid':base64.b64encode(self.user.encode('utf-8')),
-                        'pswd':base64.b64encode(self.password.encode('utf-8')),
-                        'app':self.app},
-                    headers=self.headers,
-                    **self.conn_options)
-            else:
-                request = self.session.post(
-                    self.baseurl + '/auth/admin.html',
-                    data={
-                        'uid':base64.b64encode(self.user.encode('utf-8')),
-                        'pswd':base64.b64encode(self.password.encode('utf-8')),
-                        'totp':base64.b64encode(self.totp.encode('utf-8')),
-                        'app':self.app},
-                    headers=self.headers,
-                    **self.conn_options)
+            data = { 'uid':base64.b64encode(self.user.encode('utf-8')),
+                     'pswd':base64.b64encode(self.password.encode('utf-8')),
+                     'app':self.app }
+
+            if self.totp is not None:
+                data['totp']=base64.b64encode(self.totp.encode('utf-8'))
+
+            request = self.session.post(
+                self.baseurl + '/auth/admin.html',
+                data,
+                headers=self.headers,
+                **self.conn_options)
 
         self.logger.log(logging.DEBUG, request.text)
 
@@ -415,7 +413,9 @@ class SSLClient:
         except (ElementTree.ParseError, KeyError):
             raise ServerError("Can't decode authentication result")
 
-        if  msg != self.AUTH_SUCCESS:
+        if msg == self.NEED_TOTP_AUTH:
+            raise TOTPNeededError("TOTP is needed")
+        if msg != self.AUTH_SUCCESS:
             raise AuthenticationError("Authentication failed")
 
         # 2. Serverd session
