@@ -218,7 +218,8 @@ def main():
             client.connect()
         except TOTPNeededError as exception:
             if i == 0 and totp is None:
-                totp = getpass.getpass("totp:")
+                logging.warning("Second factor authentication is required.")
+                totp = getpass.getpass("Totp:")
                 continue
             else:
                 logging.error(str(exception))
@@ -232,6 +233,8 @@ def main():
             else:
                 logging.error(str(exception))
             sys.exit(1)
+        else:
+            break
 
     # disconnect gracefuly at exit
     atexit.register(client.disconnect)
