@@ -184,6 +184,9 @@ class MissingAuth(ValueError):
 class MissingCABundle(ValueError):
     """ The certificate authority bundle is missing """
 
+class TOTPNeededError(Exception):
+    """ Time-base one time password needed """
+
 class AuthenticationError(Exception):
     """ authentication failed """
 
@@ -261,18 +264,21 @@ class SSLClient:
     SERVERD_WAIT_UPLOAD = "00a00300"
     AUTH_SUCCESS = "AUTH_SUCCESS"
     AUTH_FAILED = "AUTH_FAILED"
+    NEED_TOTP_AUTH = "NEED_TOTP_AUTH"
+    ERR_BRUTEFORCE = "ERR_BRUTEFORCE"
 
     fileregexp = re.compile(r'(.*)\s*(\<|\>)\s*(.*)\s*')
 
     CHUNK_SIZE = 10240 # bytes
 
-    def __init__(self, user='admin', password=None, host=None, ip=None, port=443, cabundle=None,
+    def __init__(self, user='admin', password=None, totp=None, host=None, ip=None, port=443, cabundle=None,
                  sslverifypeer=True, sslverifyhost=True, credentials=None,
                  usercert=None, autoconnect=True, proxy=None, timeout=None):
         """:class:`SSLclient <SSLClient>` constructor.
 
         :param user: Optional user name.
         :param password: Optional password.
+        :param totp: Optional time-based one time password.
         :param host: hostname to connect or certificate common name (appliance serial).
         :param ip: Optional ip address to connect.
         :param port: Optional port number.
@@ -288,6 +294,7 @@ class SSLClient:
 
         self.user = user
         self.password = password
+        self.totp = totp
         self.host = host
         self.ip = ip
         self.port = port
@@ -310,6 +317,8 @@ class SSLClient:
             raise MissingHost("Host parameter must be provided")
         if password is None and usercert is None:
             raise MissingAuth("Password parameter must be provided")
+        if password is None and totp is not None:
+            raise MissingAuth("Password parameter must be provided when totp parameter is provided")
         if usercert is not None and not os.path.isfile(usercert):
             raise MissingAuth("User certificate not found")
         if cabundle is None:
@@ -384,12 +393,16 @@ class SSLClient:
                 headers=self.headers, **self.conn_options)
         else:
             # password authentication
+            data = { 'uid':base64.b64encode(self.user.encode('utf-8')),
+                     'pswd':base64.b64encode(self.password.encode('utf-8')),
+                     'app':self.app }
+
+            if self.totp is not None:
+                data['totp']=base64.b64encode(self.totp.encode('utf-8'))
+
             request = self.session.post(
                 self.baseurl + '/auth/admin.html',
-                data={
-                    'uid':base64.b64encode(self.user.encode('utf-8')),
-                    'pswd':base64.b64encode(self.password.encode('utf-8')),
-                    'app':self.app},
+                data,
                 headers=self.headers,
                 **self.conn_options)
 
@@ -401,7 +414,13 @@ class SSLClient:
         except (ElementTree.ParseError, KeyError):
             raise ServerError("Can't decode authentication result")
 
-        if  msg != self.AUTH_SUCCESS:
+        if msg == self.ERR_BRUTEFORCE:
+            nws_node = ElementTree.fromstring(request.content)
+            delay = nws_node.attrib['delay']
+            raise AuthenticationError("Brut force detected, try again after " + delay + " seconds.")
+        if msg == self.NEED_TOTP_AUTH:
+            raise TOTPNeededError("TOTP is needed")
+        if msg != self.AUTH_SUCCESS:
             raise AuthenticationError("Authentication failed")
 
         # 2. Serverd session
