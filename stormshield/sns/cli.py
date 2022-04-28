@@ -202,7 +202,7 @@ def main():
     if timeout == -1:
         timeout = None
 
-    # try without totp, retry if totp is needed
+    # first try without totp, if needed ask for totp
     for i in range(0, 2):
         try:
             client = SSLClient(

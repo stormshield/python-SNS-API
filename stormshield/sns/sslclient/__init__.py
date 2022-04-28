@@ -265,6 +265,7 @@ class SSLClient:
     AUTH_SUCCESS = "AUTH_SUCCESS"
     AUTH_FAILED = "AUTH_FAILED"
     NEED_TOTP_AUTH = "NEED_TOTP_AUTH"
+    ERR_BRUTEFORCE = "ERR_BRUTEFORCE"
 
     fileregexp = re.compile(r'(.*)\s*(\<|\>)\s*(.*)\s*')
 
@@ -413,6 +414,10 @@ class SSLClient:
         except (ElementTree.ParseError, KeyError):
             raise ServerError("Can't decode authentication result")
 
+        if msg == self.ERR_BRUTEFORCE:
+            nws_node = ElementTree.fromstring(request.content)
+            delay = nws_node.attrib['delay']
+            raise AuthenticationError("Brut force detected, try again after " + delay + " seconds.")
         if msg == self.NEED_TOTP_AUTH:
             raise TOTPNeededError("TOTP is needed")
         if msg != self.AUTH_SUCCESS:
