@@ -87,8 +87,8 @@ id=smtp_test_msg type=smtp_conf name="Test SMTP configuration"
 
         expected = """101 code=00a01000 msg="Begin" format="list"
 [Result]
+network_internals
 labo_network
-Network_internals
 100 code=00a00100 msg="Ok\""""
 
         response = self.client.send_command('CONFIG WEBADMIN ACCESS SHOW')
