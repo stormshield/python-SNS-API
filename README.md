@@ -78,7 +78,7 @@ None
 
 ### File upload/download
 
-Files can be downloaded or uploaded by adding a redirection to a file with '>' or '<' at the end of the configuration command.
+Files can be downloaded to or uploaded from the client host by adding a redirection to a file with '>' or '<' at the end of the configuration command.
 
 ```python
 >>> client.send_command("CONFIG BACKUP list=all > /tmp/mybackup.na")
