@@ -102,7 +102,7 @@ Concerning the SSL validation:
 
 * For the first connection to a new appliance, ssl host name verification can be bypassed with `--no-sslverifyhost` option.
 * To connect to a known appliance with the default certificate use `--host <serial> --ip <ip address>` to validate the peer certificate.
-* If a custom CA and certificate is installed, use `--host myfirewall.tld --cabundle <ca.pem>`.
+* If a custom CA and certificate is installed, use `--host myfirewall.tld --cabundle <ca.pem>`. CA bundle should contain at least the root CA.
 * For client certificate authentication, the expected format is a PEM file with the certificate and the unencrypted key concatenated.
 
 ## Proxy
