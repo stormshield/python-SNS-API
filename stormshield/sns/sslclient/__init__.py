@@ -483,7 +483,7 @@ class SSLClient:
         else:
             raise ServerError("Unknown error")
 
-    def send_command(self, command):
+    def send_command(self, command, **conn_options):
         """Execute a NSRPC command on the remote appliance.
 
         :param command: SNS API command. Files can be uploaded by adding '< filename'
@@ -491,6 +491,11 @@ class SSLClient:
         :return: :class:`Response <Response>` object
         :rtype: stormshield.sns.Response
         """
+
+        # overload connection options
+        for k in self.conn_options:
+            if k not in conn_options:
+                conn_options[k] = self.conn_options[k]
 
         filename = None
         result = self.fileregexp.match(command)
@@ -501,7 +506,7 @@ class SSLClient:
         request = self.session.get(
             self.baseurl + '/api/command?sessionid=' + self.sessionid +
             '&cmd=' + requests.compat.quote(command.encode('utf-8')), # manually done since we need %20 encoding
-            headers=self.headers,  **self.conn_options)
+            headers=self.headers,  **conn_options)
 
         self.logger.log(logging.DEBUG, request.text)
 
