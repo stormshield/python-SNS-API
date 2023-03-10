@@ -267,7 +267,7 @@ class SSLClient:
     NEED_TOTP_AUTH = "NEED_TOTP_AUTH"
     ERR_BRUTEFORCE = "ERR_BRUTEFORCE"
 
-    fileregexp = re.compile(r'(.*)\s*(\<|\>)\s*(.*)\s*')
+    fileregexp = re.compile(r'^(?P<cmd>.+?)\s*[<>]\s*(?!.*\")(?P<file>.*?)$')
 
     CHUNK_SIZE = 10240 # bytes
 
@@ -500,8 +500,8 @@ class SSLClient:
         filename = None
         result = self.fileregexp.match(command)
         if result:
-            command = result.group(1)
-            filename = result.group(3)
+            command = result.group('cmd')
+            filename = result.group('file')
 
         request = self.session.get(
             self.baseurl + '/api/command?sessionid=' + self.sessionid +
