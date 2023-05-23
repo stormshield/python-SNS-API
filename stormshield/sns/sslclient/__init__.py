@@ -18,6 +18,7 @@ import re
 import platform
 import defusedxml.ElementTree as ElementTree
 from xml.etree import ElementTree as Et
+import ssl
 import requests
 from requests.adapters import HTTPAdapter, DEFAULT_POOLSIZE, DEFAULT_RETRIES, DEFAULT_POOLBLOCK
 from urllib3.poolmanager import PoolManager, proxy_from_url
@@ -25,6 +26,7 @@ from requests.utils import get_auth_from_url
 from requests.exceptions import InvalidSchema
 import requests.compat
 from requests_toolbelt.multipart.encoder import MultipartEncoder
+import urllib3
 try:
     from urllib3.contrib.socks import SOCKSProxyManager
 except ImportError:
@@ -33,51 +35,108 @@ except ImportError:
 
 from stormshield.sns.configparser import ConfigParser
 import stormshield.sns.crc as snscrc
+from packaging import version
 
 from .__version__ import __version__
+
+URLLIB3V2 = version.parse(urllib3.__version__) >= version.parse('2.0.0')
 
 #disable ssl warnings, we have --sslverify* for that
 requests.packages.urllib3.disable_warnings(
     requests.packages.urllib3.exceptions.InsecureRequestWarning)
-requests.packages.urllib3.disable_warnings(
-    requests.packages.urllib3.exceptions.SubjectAltNameWarning)
+try:
+    requests.packages.urllib3.disable_warnings(
+        requests.packages.urllib3.exceptions.SubjectAltNameWarning)
+except AttributeError:
+    # urllib3 v2 doesn't have the exception anymore
+    pass
 #disable http warning 'Received response with both Content-Length and Transfer-Encoding set'
 logging.getLogger(requests.packages.urllib3.__name__).setLevel(logging.ERROR)
 
-class HostNameIgnoringAdapter(HTTPAdapter):
-    """ HTTP adapter to disable strict ssl host name verification """
+class HostNameAdapter(HTTPAdapter):
+    """ HTTP adapter to disable strict ssl host name verification or check hostname against common name """
+
+    def __init__(self, host=None):
+        self.host = host
+        super().__init__()
 
     def init_poolmanager(self, connections, maxsize, block=False):
-        self.poolmanager = PoolManager(num_pools=connections,
-                                       maxsize=maxsize,
-                                       block=block,
-                                       assert_hostname=False)
+
+        if URLLIB3V2:
+            context = ssl.create_default_context()
+            context.hostname_checks_common_name = True # use CN field for factory Stormshield certificates
+            context.check_hostname = False # check is done with assert_hostname
+
+            self.poolmanager = PoolManager(num_pools=connections,
+                                        maxsize=maxsize,
+                                        block=block,
+                                        assert_hostname=self.host,
+                                        ssl_context=context)
+        else:
+            self.poolmanager = PoolManager(num_pools=connections,
+                                        maxsize=maxsize,
+                                        block=block,
+                                        assert_hostname=False)
 
     def proxy_manager_for(self, proxy, **proxy_kwargs):
         if proxy in self.proxy_manager:
             manager = self.proxy_manager[proxy]
         elif proxy.lower().startswith('socks'):
             username, password = get_auth_from_url(proxy)
-            manager = self.proxy_manager[proxy] = SOCKSProxyManager(
-                proxy,
-                username=username,
-                password=password,
-                num_pools=self._pool_connections,
-                maxsize=self._pool_maxsize,
-                block=self._pool_block,
-                assert_hostname=False,
-                **proxy_kwargs
-            )
+
+            if URLLIB3V2:
+                context = ssl.create_default_context()
+                context.hostname_checks_common_name = True
+                context.check_hostname = False
+
+                manager = self.proxy_manager[proxy] = SOCKSProxyManager(
+                    proxy,
+                    username=username,
+                    password=password,
+                    num_pools=self._pool_connections,
+                    maxsize=self._pool_maxsize,
+                    block=self._pool_block,
+                    assert_hostname=self.host,
+                    ssl_context=context
+                    **proxy_kwargs
+                )
+            else:
+                manager = self.proxy_manager[proxy] = SOCKSProxyManager(
+                    proxy,
+                    username=username,
+                    password=password,
+                    num_pools=self._pool_connections,
+                    maxsize=self._pool_maxsize,
+                    block=self._pool_block,
+                    assert_hostname=False,
+                    **proxy_kwargs
+                )
         else:
             proxy_headers = self.proxy_headers(proxy)
-            manager = self.proxy_manager[proxy] = proxy_from_url(
-                proxy,
-                proxy_headers=proxy_headers,
-                num_pools=self._pool_connections,
-                maxsize=self._pool_maxsize,
-                block=self._pool_block,
-                assert_hostname=False,
-                **proxy_kwargs)
+
+            if URLLIB3V2:
+                context = ssl.create_default_context()
+                context.hostname_checks_common_name = True
+                context.check_hostname = False
+
+                manager = self.proxy_manager[proxy] = proxy_from_url(
+                    proxy,
+                    proxy_headers=proxy_headers,
+                    num_pools=self._pool_connections,
+                    maxsize=self._pool_maxsize,
+                    block=self._pool_block,
+                    assert_hostname=self.host,
+                    ssl_context=context
+                    **proxy_kwargs)
+            else:
+                manager = self.proxy_manager[proxy] = proxy_from_url(
+                    proxy,
+                    proxy_headers=proxy_headers,
+                    num_pools=self._pool_connections,
+                    maxsize=self._pool_maxsize,
+                    block=self._pool_block,
+                    assert_hostname=False,
+                    **proxy_kwargs)
 
         return manager
 
@@ -348,7 +407,10 @@ class SSLClient:
             self.session.verify = False
 
         if not self.sslverifyhost:
-            self.session.mount(self.baseurl, HostNameIgnoringAdapter())
+            if URLLIB3V2:
+                self.session.mount(self.baseurl, HostNameAdapter(False))
+            else:
+                self.session.mount(self.baseurl, HostNameAdapter())
 
         if self.ip is not None:
             #test ipv6 address
@@ -358,7 +420,11 @@ class SSLClient:
             except ipaddress.AddressValueError:
                 urlip = self.ip
             self.baseurl = 'https://' + urlip + ':' + str(self.port)
-            self.session.mount(self.baseurl.lower(), DNSResolverHTTPSAdapter(self.host, self.ip))
+
+            if URLLIB3V2:
+                self.session.mount(self.baseurl, HostNameAdapter(self.host))
+            else:
+                self.session.mount(self.baseurl.lower(), DNSResolverHTTPSAdapter(self.host, self.ip))
 
         if self.usercert is not None:
             self.session.cert = self.usercert

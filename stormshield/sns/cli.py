@@ -228,8 +228,8 @@ def main():
             search = re.search(r'doesn\'t match \'(.*)\'', str(exception))
             if search:
                 logging.error(("Appliance name can't be verified, to force connection "
-                               "use \"--host %s --ip %s\" or \"--no-sslverifyhost\" "
-                               "options"), search.group(1), host)
+                               "use \"--host %s --ip %s\" or \"--no-sslverifyhost|-K\" "
+                               "options"), search.group(1), ip if ip is not None else host)
             else:
                 logging.error(str(exception))
             sys.exit(1)
