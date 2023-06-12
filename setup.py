@@ -34,9 +34,8 @@ setuptools.setup(
         'pyreadline; platform_system == "Windows"'
     ],
     include_package_data=True,
-    tests_require=["nose"],
-    test_suite='nose.collector',
-    classifiers=[        
+    tests_require=["pytest"],
+    classifiers=[
         "Programming Language :: Python :: 3",
         "Programming Language :: Python :: 3.7",
         "License :: OSI Approved :: Apache Software License",

@@ -60,7 +60,7 @@ class HostNameAdapter(HTTPAdapter):
         self.host = host
         super().__init__()
 
-    def init_poolmanager(self, connections, maxsize, block=False):
+    def init_poolmanager(self, connections, maxsize, block=False, **pool_kwargs):
 
         if URLLIB3V2:
             context = ssl.create_default_context()
@@ -71,12 +71,14 @@ class HostNameAdapter(HTTPAdapter):
                                         maxsize=maxsize,
                                         block=block,
                                         assert_hostname=self.host,
-                                        ssl_context=context)
+                                        ssl_context=context,
+                                        **pool_kwargs)
         else:
             self.poolmanager = PoolManager(num_pools=connections,
                                         maxsize=maxsize,
                                         block=block,
-                                        assert_hostname=False)
+                                        assert_hostname=False,
+                                        **pool_kwargs)
 
     def proxy_manager_for(self, proxy, **proxy_kwargs):
         if proxy in self.proxy_manager:
@@ -97,7 +99,7 @@ class HostNameAdapter(HTTPAdapter):
                     maxsize=self._pool_maxsize,
                     block=self._pool_block,
                     assert_hostname=self.host,
-                    ssl_context=context
+                    ssl_context=context,
                     **proxy_kwargs
                 )
             else:
@@ -126,7 +128,7 @@ class HostNameAdapter(HTTPAdapter):
                     maxsize=self._pool_maxsize,
                     block=self._pool_block,
                     assert_hostname=self.host,
-                    ssl_context=context
+                    ssl_context=context,
                     **proxy_kwargs)
             else:
                 manager = self.proxy_manager[proxy] = proxy_from_url(
@@ -148,6 +150,11 @@ class DNSResolverHTTPSAdapter(HTTPAdapter):
                  pool_block=DEFAULT_POOLBLOCK):
         self.__common_name = common_name
         self.__host = host
+
+        self.__is_stormshield_cert = True
+        if re.search(r"\.", self.__common_name):
+            self.__is_stormshield_cert = False
+
         super(DNSResolverHTTPSAdapter, self).__init__(pool_connections=pool_connections,
                                                       pool_maxsize=pool_maxsize,
                                                       max_retries=max_retries,
@@ -155,6 +162,11 @@ class DNSResolverHTTPSAdapter(HTTPAdapter):
 
     def init_poolmanager(self, connections, maxsize, block=DEFAULT_POOLBLOCK, **pool_kwargs):
         pool_kwargs['assert_hostname'] = self.__common_name
+        if URLLIB3V2 and self.__is_stormshield_cert:
+            context = ssl.create_default_context()
+            context.hostname_checks_common_name = True # use CN field for factory Stormshield certificates
+            context.check_hostname = False # check is done with assert_hostname
+            pool_kwargs["ssl_context"] = context
         super(DNSResolverHTTPSAdapter, self).init_poolmanager(connections,
                                                               maxsize,
                                                               block=block,
@@ -420,11 +432,7 @@ class SSLClient:
             except ipaddress.AddressValueError:
                 urlip = self.ip
             self.baseurl = 'https://' + urlip + ':' + str(self.port)
-
-            if URLLIB3V2:
-                self.session.mount(self.baseurl, HostNameAdapter(self.host))
-            else:
-                self.session.mount(self.baseurl.lower(), DNSResolverHTTPSAdapter(self.host, self.ip))
+            self.session.mount(self.baseurl.lower(), DNSResolverHTTPSAdapter(self.host, self.ip))
 
         if self.usercert is not None:
             self.session.cert = self.usercert
@@ -454,11 +462,13 @@ class SSLClient:
         # 1. Authentication and get cookie
         if self.usercert is not None:
             # user cert authentication
+            self.logger.log(logging.DEBUG, "Authentication with SSL certificate")
             request = self.session.get(
                 self.baseurl + '/auth/admin.html?sslcert=1&app={}'.format(self.app),
                 headers=self.headers, **self.conn_options)
         else:
             # password authentication
+            self.logger.log(logging.DEBUG, "Authentication with user/password")
             data = { 'uid':base64.b64encode(self.user.encode('utf-8')),
                      'pswd':base64.b64encode(self.password.encode('utf-8')),
                      'app':self.app }

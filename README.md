@@ -130,7 +130,11 @@ The library and `snscli` tool support HTTP and SOCKS proxies, use `--proxy schem
 
 Warning: some tests require a remote SNS appliance.
 
-`$ PASSWORD=password APPLIANCE=10.0.0.254 python3 setup.py test`
+`$ PASSWORD=password APPLIANCE=10.0.0.254 tox`
+
+To run one test:
+
+`tox -- tests/test_format_ini`
 
 
 To run `snscli` from the source folder without install:

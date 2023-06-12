@@ -21,6 +21,8 @@ from colorlog import LevelFormatter
 
 from stormshield.sns.sslclient import SSLClient, ServerError, TOTPNeededError
 from stormshield.sns.sslclient.__version__ import __version__ as libversion
+from urllib3 import __version__ as urllib3version
+from requests import __version__ as requestsversion
 
 # define missing exception for python2
 try:
@@ -179,6 +181,8 @@ def main():
 
     if version:
         logging.info("snscli - stormshield.sns.sslclient version {}".format(libversion))
+        logging.info(" urllib3 {}".format(urllib3version))
+        logging.info(" requests {}".format(requestsversion))
         sys.exit(0)
 
     if script is not None:
