@@ -2,7 +2,7 @@
 
 A Python client for the Stormshield Network Security appliance SSL API.
 
-Note: this module requires python3.7
+Note: this module requires python3.7 or later.
 
 ## API usage
 
