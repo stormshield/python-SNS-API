@@ -90,7 +90,7 @@ CHPWD.*
     def test_list(self):
         """ list format """
 
-        expected = {'Result': ['network_internals', 'labo_network']}
+        expected = {'Result': ['network_internals', 'labo_networks']}
 
         response = self.client.send_command('CONFIG WEBADMIN ACCESS SHOW')
 
