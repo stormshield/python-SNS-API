@@ -146,4 +146,4 @@ To run `snscli` from the source folder without install:
 
 * [Stormshield corporate website](https://www.stormshield.com)
 * [CLI commands reference guide](https://documentation.stormshield.eu/SNS/v3/en/Content/CLI_Serverd_Commands_reference_Guide_v3/Introduction.htm)
-
+* [Python SNS API example scripts](https://github.com/stormshield/sns-scripting/tree/master/python)
