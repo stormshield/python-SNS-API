@@ -94,14 +94,19 @@ class ConfigParser:
                     line = line.encode('utf-8')
                 # parse token=value token2=value2
                 lexer = shlex(line, posix=True)
-                lexer.wordchars += "=.-*:,/@'"
+                lexer.wordchars += "=.-*:,/@'()"
                 lexer.quotes = '"'
                 parsed = {}
-                for word in lexer:
-                    # ignore anything else than token=value
-                    if '=' in word:
-                        token, value = word.split("=", 1)
-                        parsed[token] = value
+                try:
+                    for word in lexer:
+                        # ignore anything else than token=value
+                        if '=' in word:
+                            token, value = word.split("=", 1)
+                            parsed[token] = value
+                except Exception as e:
+                    print("Can't parse line:\n" + line + "\n")
+                    print(e)
+                    raise(e)
                 self.data[section].append(parsed)
             else:
                 # section
