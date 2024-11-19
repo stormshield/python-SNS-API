@@ -70,19 +70,22 @@ CHPWD.*
         """ section_line format """
 
         expected = {
-            'Result': [
-                {'id': 'pvm_detailed', 'type': 'pvm', 'name': 'Detailed Vulnerability Mail'},
-                {'id': 'pvm_summary', 'type': 'pvm', 'name': 'Summary Vulnerability Mail'},
-                {'id': 'app_cert_req', 'type': 'cert_req', 'name': 'Accept the certificate request'},
-                {'id': 'rej_cert_req', 'type': 'cert_req', 'name': 'Reject the certificate request'},
-                {'id': 'app_user_req', 'type': 'user_req', 'name': 'Accept the user request'},
-                {'id': 'rej_user_req', 'type': 'user_req', 'name': 'Reject the user request'},
-                {'id': 'sponsor_req', 'type': 'sponsoring', 'name': 'Sponsoring request'},
-                {'id': 'smtp_test_msg', 'type': 'smtp_conf', 'name': 'Test SMTP configuration'}
+            'Object': [
+                {'type': 'host', 'global': '0', 'name': '_TestHost1', 'ip': '10.10.5.5', 'modify': '1', 'comment': ''},
+                {'type': 'host', 'global': '0', 'name': '_TestHost2', 'ip': '10.10.5.6', 'modify': '1', 'comment': ''},
+                {'type': 'host', 'global': '0', 'name': '_TestHost3', 'ip': '10.10.5.7', 'modify': '1', 'comment': ''}
             ]
         }
 
-        response = self.client.send_command('CONFIG COMMUNICATION EMAIL TEMPLATE LIST')
+        self.client.send_command('CONFIG OBJECT HOST NEW name=_TestHost1 ip=10.10.5.5')
+        self.client.send_command('CONFIG OBJECT HOST NEW name=_TestHost2 ip=10.10.5.6')
+        self.client.send_command('CONFIG OBJECT HOST NEW name=_TestHost3 ip=10.10.5.7')
+
+        response = self.client.send_command('CONFIG OBJECT LIST type=host search=_Test* searchfield=name start=0')
+
+        self.client.send_command('CONFIG OBJECT HOST DELETE name=_TestHost1')
+        self.client.send_command('CONFIG OBJECT HOST DELETE name=_TestHost2')
+        self.client.send_command('CONFIG OBJECT HOST DELETE name=_TestHost3')
 
         self.assertEqual(response.data, expected)
         self.assertEqual(response.ret, 100)

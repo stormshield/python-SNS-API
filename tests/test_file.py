@@ -36,16 +36,19 @@ class TestFormatIni(unittest.TestCase):
         letters = string.ascii_letters + 'éèàÎîô'
 
         #generate a random file
-        content = ("".join( [random.choice(letters) for i in range(2500)] )).encode('utf-8')
+        content = ( "[Filter] \n pass from network_internals to any #ASCII" +
+                    "".join( [random.choice(letters) for i in range(100)] )
+                  ).encode('utf-8')
         with open(self.upload, "wb") as fh:
             fh.write(content)
 
-        response = self.client.send_command('CONFIG COMMUNICATION EMAIL TEMPLATE UPLOAD pvm_summary < ' + self.upload)
-        self.assertEqual(response.ret, 100)
-        self.client.send_command('CONFIG COMMUNICATION ACTIVATE')
+        response = self.client.send_command('CONFIG SLOT UPLOAD slot=1 name=testUpload < ' + self.upload)
         self.assertEqual(response.ret, 100)
 
-        response = self.client.send_command('CONFIG COMMUNICATION EMAIL TEMPLATE DOWNLOAD pvm_summary > ' + self.download)
+        response = self.client.send_command('CONFIG SLOT DOWNLOAD slot=1 name=testUpload > ' + self.download)
+        self.assertEqual(response.ret, 100)
+
+        self.client.send_command('CONFIG SLOT DEFAULT type=filter slot=1')
         self.assertEqual(response.ret, 100)
 
         with open(self.download, "rb") as fh:
