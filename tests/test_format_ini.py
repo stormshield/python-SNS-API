@@ -9,6 +9,7 @@ from stormshield.sns.sslclient import SSLClient
 
 APPLIANCE = os.getenv('APPLIANCE', "")
 PASSWORD = os.getenv('PASSWORD', "")
+SSLVERIFYPEER = os.getenv('SSLVERIFYPEER', "1") == "1";
 
 @unittest.skipIf(APPLIANCE=="", "APPLIANCE env var must be set to the ip/hostname of a running SNS appliance")
 @unittest.skipIf(PASSWORD=="", "PASSWORD env var must be set to the firewall password")
@@ -16,7 +17,7 @@ class TestFormatIni(unittest.TestCase):
     """ Test INI format """
 
     def setUp(self):
-        self.client = SSLClient(host=APPLIANCE, user='admin', password=PASSWORD, sslverifyhost=False)
+        self.client = SSLClient(host=APPLIANCE, user='admin', password=PASSWORD, sslverifyhost=False, sslverifypeer=SSLVERIFYPEER)
 
         self.maxDiff = 5000
 

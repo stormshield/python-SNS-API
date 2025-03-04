@@ -29,6 +29,8 @@ client.disconnect()
 
 ```
 
+* **Note:** Starting from the 5.0 firmware, a custom CA is used by default by the SSL API. To continue to connect checking the certificate authority of the appliance, the "SNS-WebServer-default-authority" CA must be retrieved from each appliance, then added to a cabundle.pem file. Alternatively, CA verification can be bypassed using sslverifypeer=False argument to SSLClient().
+
 ### Command results
 
 Command results are available in text, xml or python structure formats:
@@ -104,6 +106,8 @@ Concerning the SSL validation:
 * To connect to a known appliance with the default certificate use `--host <serial> --ip <ip address>` to validate the peer certificate.
 * If a custom CA and certificate is installed, use `--host myfirewall.tld --cabundle <ca.pem>`. CA bundle should contain at least the root CA.
 * For client certificate authentication, the expected format is a PEM file with the certificate and the unencrypted key concatenated.
+
+* **Note:** Starting from the 5.0 firmware, a custom CA is used by default by the SSL API. To continue to connect checking the certificate authority of the appliance, the "SNS-WebServer-default-authority" CA must be retrieved from each appliance, then added to a cabundle.pem file. Alternatively, CA verification can be bypassed using `--no-sslverifypeer` option.
 
 ## Proxy
 
