@@ -396,7 +396,7 @@ class SSLClient:
             # use default cabundle
             self.cabundle = os.path.normpath(os.path.join(os.path.dirname(__file__), "..", 'bundle.ca'))
         if not os.path.isfile(self.cabundle):
-            raise MissingCABundle("Certificate authority bunble not found")
+            raise MissingCABundle("Certificate authority bundle not found")
 
         #test ipv6 address
         try:
