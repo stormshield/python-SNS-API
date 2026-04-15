@@ -217,5 +217,31 @@ type=group global=0 name=it's_a_test nb_elements=2 modify=1 comment= used=0
         config = ConfigParser(input)
         self.assertEqual(expected, config.data)
 
+    def test_bad_xml(self):
+        """ Test bad xml returned by serverd """
+
+        input = """101 code=00a01000 msg="Begin" format="section_line"
+[Rule]
+rule="pass route router6 from net6 to IANA_v6_multicast"
+[Check]
+slot=local_filter_slot type=warning code=148
+" causedby_element_code=10 causedby_element=route causedby_value=router6
+slot=local_filter_slot type=warning code=97 msg="PBR is not applied on multicast packets."
+100 code=00a00100 msg="Ok"\""""
+
+        expected = {
+            "Rule": [{"rule": "pass route router6 from net6 to IANA_v6_multicast"}],
+            "Check": [
+                {"slot": "local_filter_slot", "type": "warning", "code": '148'},
+                {}, # line with error is ignored
+                {"slot": "local_filter_slot", "type": "warning", "code": '97', "msg": "PBR is not applied on multicast packets."}
+            ]
+        }
+
+        config = ConfigParser(input)
+        print(config.data)
+        self.assertEqual(expected, config.data)
+
+
 if __name__ == '__main__':
     unittest.main()

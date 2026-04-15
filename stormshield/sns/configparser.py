@@ -11,6 +11,9 @@ import sys
 import re
 from shlex import shlex
 from requests.structures import CaseInsensitiveDict
+import logging
+
+logger = logging.getLogger(__name__)
 
 def unquote(value):
     """ remove quotes if needed """
@@ -104,9 +107,7 @@ class ConfigParser:
                             token, value = word.split("=", 1)
                             parsed[token] = value
                 except Exception as e:
-                    print("Can't parse line:\n" + line + "\n")
-                    print(e)
-                    raise(e)
+                    logger.warning(f"Can't parse line: `{line}`, error: {str(e)}")
                 self.data[section].append(parsed)
             else:
                 # section
