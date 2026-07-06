@@ -408,6 +408,7 @@ class SSLClient:
         self.baseurl = 'https://' + urlhost + ':' + str(self.port)
 
         self.headers = {
+            'Accept-Encoding': 'identity',
             'user-agent': 'stormshield.sns.sslclient/{} ({})'.format(
                 __version__, platform.platform())
         }
