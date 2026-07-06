@@ -31,7 +31,7 @@ setuptools.setup(
         'colorlog',
         'defusedxml',
         'packaging',
-        'pyreadline; platform_system == "Windows"'
+        'pyreadline3; platform_system == "Windows"'
     ],
     include_package_data=True,
     tests_require=["pytest"],
